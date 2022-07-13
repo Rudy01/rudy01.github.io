@@ -79,7 +79,7 @@ Service 1 (dash_and_infra template, 2 EC2 instances, 1 web server instance, 1 la
         │   │   ├── service_1.tfvars
         │   │   └── service_1.s3.tfbackend
         ```
-        :info: **Note: If you are creating lambda functions, you also need to add a .zip file of the code**
+	:info: **Note: If you are creating lambda functions, you also need to add a .zip file of the code**
  3. Change the values of service_1 variables by opening the service_1.tfvars file
 	 ```
         service_name      = "service_1"
@@ -94,7 +94,7 @@ Service 1 (dash_and_infra template, 2 EC2 instances, 1 web server instance, 1 la
         width             = 4
         height            = 7
         ```
-	 Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation](#dash_and_infra) for this template
+Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation](#dash_and_infra) for this template
  4. Change the values of service_1 backend variables by opening the service_1.s3.tfbackend file
 	 ```
         bucket         = "sam-personal-tf-state"
