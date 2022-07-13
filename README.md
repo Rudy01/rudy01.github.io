@@ -149,7 +149,7 @@ Each of these variables controls a different aspect of the terraform backend and
           - terraform init -reconfigure -backend-config=../../service_1/service_1.s3.tfbackend
           - terraform destroy -auto-approve -var-file=../../service_1/service_1.tfvars -var-file=../../service_1/service_1.s3.tfbackend
 ```
-For more info on the Taskfile, go to: https://taskfile.dev/
+For more info on the Taskfile, go to: [Home | Task](https://taskfile.dev/)
  
 Service 2 (dash_only template, 1 EC2 instance, 1 web server instance, 1 lambda function)
 
@@ -193,6 +193,7 @@ dynamodb_table = "terraform_state_locking"
 encrypt        = true
 ```
 Each of these variables controls a different aspect of the terraform backend and is passed to both the versions.tf file and the appropriate template file
+
 
  5. Add the service to the Taskfile
     
@@ -259,20 +260,31 @@ Each time you add a new service, you will need to:
 **From the home directory (C1_SAIC_InternProg) run the Taskfile with the following commands from the command line:**
 
  1. Before provisioning any services:
+
 	 a. **For all services:** Provision a remote backend: `$ task backend`
-	 b. **For** `dash_only` **services:** Refresh the list of active lambda functions: $ task lambda_list
+	 
+	 b. **For** `dash_only` **services:** Refresh the list of active lambda functions: $` task lambda_list`
  2. To deploy all services: `$ task services`
  3. To run an individual service:
-	 a. **Service 1**: $ task service_1
-	 b. **Service 2**: $ task service_2
-	 c. **Service 3**: $ task service_3_infra
-								  $ task service_3_dashboard (run Service Infrastructure first before running this)
+
+	 a. **Service 1**: `$ task service_1`
+	 
+	 b. **Service 2**: `$ task service_2`
+	 
+	 c. **Service 3**: `$ task service_3_infra`
+	 
+`$ task service_3_dashboard` (run Service Infrastructure first before running this)
+
  4. To destroy all services (and the backend): `$ task destroy_services`
+
  5. To destroy an individual service:
-	 a. **Service 1**: $ task destroy_service_1
-	 b. **Service 2**: $ task destroy_service_2
-	 c. **Backend**: $ task destroy_backend
- 6. To test the services: $ task testing
+
+	 a. **Service 1**: `$ task destroy_service_1`
+	 
+	 b. **Service 2**: `$ task destroy_service_2`
+	 
+	 c. **Backend**: $ `task destroy_backend`
+ 6. To test the services: `$ task testing`
 
  ℹ When creating a test service for your code, make sure you provision a separate backend to prevent your other infrastructure from being influenced by the test
 # Modules
