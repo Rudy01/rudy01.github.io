@@ -1,4 +1,3 @@
-Rutvik's Portfolio website: rudy01.github.io
 **This document will detail the implementation and usage for the intern dashboard project. This project uses Terraform to automatically provision CloudWatch alarms and dashboards for services in two different ways: either at the same time as the AWS resources for those services are being provisioned, or after the service’s resources have already been provisioned.**
 
 # Provisioning Templates
