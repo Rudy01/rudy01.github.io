@@ -68,7 +68,7 @@ Service 1 (dash_and_infra template, 2 EC2 instances, 1 web server instance, 1 la
  	 │   ├── service_1
  	 ```
  2. Next, make the necessary terraform files for this service
-	 ```
+	```
         $ echo > service_1.tfvars
         $ echo > service_1.s3.tfbackend
         --------------------
@@ -83,7 +83,7 @@ Service 1 (dash_and_infra template, 2 EC2 instances, 1 web server instance, 1 la
 :info: **Note: If you are creating lambda functions, you also need to add a .zip file of the code**
 
  3. Change the values of service_1 variables by opening the service_1.tfvars file
-	 ```
+	```
         service_name      = "service_1"
         ec2_name_list     = ["Instance_1", "Instance_2"]
         server_name_list  = ["Server_1"]
@@ -100,7 +100,7 @@ Service 1 (dash_and_infra template, 2 EC2 instances, 1 web server instance, 1 la
 Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation](#dash_and_infra) for this template
 
  4. Change the values of service_1 backend variables by opening the service_1.s3.tfbackend file
-	 ```
+	```
         bucket         = "sam-personal-tf-state"
         key            = "service_1/terraform.tfstate"
         region         = "us-east-1"
@@ -109,7 +109,7 @@ Each of these variables controls a different aspect of our configuration. To see
         ```
 Each of these variables controls a different aspect of the terraform backend and is passed to both the versions.tf file and the appropriate template file
  5. Create a Taskfile for the service
-	 ```
+    ```
     version: "3"
     
     tasks:
