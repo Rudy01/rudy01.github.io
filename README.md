@@ -68,7 +68,7 @@ Service 1 (dash_and_infra template, 2 EC2 instances, 1 web server instance, 1 la
  	 │   ├── service_1
  	 ```
  2. Next, make the necessary terraform files for this service
-	  ```
+```
         $ echo > service_1.tfvars
         $ echo > service_1.s3.tfbackend
         --------------------
@@ -78,7 +78,7 @@ Service 1 (dash_and_infra template, 2 EC2 instances, 1 web server instance, 1 la
         │   │   ├── hello_python.zip
         │   │   ├── service_1.tfvars
         │   │   └── service_1.s3.tfbackend
-        ```
+```
 	
 :info: **Note: If you are creating lambda functions, you also need to add a .zip file of the code**
 
