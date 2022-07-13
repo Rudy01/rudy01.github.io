@@ -60,7 +60,7 @@
 
 Service 1 (dash_and_infra template, 2 EC2 instances, 1 web server instance, 1 lambda function)
  1. Let’s start by making a folder inside of the examples directory for our service and switch to it
-	 ```
+	   ```
 	 $ mkdir examples/service_1 && cd $_`
  	 --------------------`
  	 c1_saic_internprog/
