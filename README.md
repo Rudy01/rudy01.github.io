@@ -153,7 +153,7 @@ For more info on the Taskfile, go to: https://taskfile.dev/
  
 Service 2 (dash_only template, 1 EC2 instance, 1 web server instance, 1 lambda function)
 
- 6. Let’s start by making a folder inside of the examples directory for our service and switch to it
+ 1. Let’s start by making a folder inside of the examples directory for our service and switch to it
 ```
 $ mkdir examples/service_2 && cd $_
  --------------------
@@ -162,7 +162,7 @@ c1_saic_internprog/
 │   ├── service_2
  ```
  
- 7. Next, make the necessary terraform files for this service
+ 2. Next, make the necessary terraform files for this service
 ```
 $ echo > service_2.tf
 $ echo > service_2.s3.tfbackend
@@ -173,7 +173,7 @@ c1_saic_internprog/
 │   │   ├── service_2.tfvars
 │   │   └── service_2.s3.tfbackend
 ```
- 8. Change the values of service_2 variables by opening the service_2.tfvars file
+ 3. Change the values of service_2 variables by opening the service_2.tfvars file
 ```
 service_name      = "service_2"
 list_of_emails    = ["John.Doe@saic.com", "Jane.Doe@saic.com"]
@@ -184,7 +184,7 @@ aws_region        = "us-east-1"
 ```
 Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation](#dash_only) for this template
 
- 9. Change the values of service_2 backend variables by opening the service_2.s3.backend file
+ 4. Change the values of service_2 backend variables by opening the service_2.s3.backend file
 ```
 bucket         = "sam-personal-tf-state"
 key            = "service_2/terraform.tfstate"
@@ -194,7 +194,7 @@ encrypt        = true
 ```
 Each of these variables controls a different aspect of the terraform backend and is passed to both the versions.tf file and the appropriate template file
 
- 10. Add the service to the Taskfile
+ 5. Add the service to the Taskfile
     
    ```
         version: "3"
@@ -258,21 +258,22 @@ Each time you add a new service, you will need to:
 
 **From the home directory (C1_SAIC_InternProg) run the Taskfile with the following commands from the command line:**
 
- 11. Before provisioning any services:
+ 1. Before provisioning any services:
 	 a. **For all services:** Provision a remote backend: `$ task backend`
 	 b. **For** `dash_only` **services:** Refresh the list of active lambda functions: $ task lambda_list
- 12. To deploy all services: `$ task services`
- 13. To run an individual service:
+ 2. To deploy all services: `$ task services`
+ 3. To run an individual service:
 	 a. **Service 1**: $ task service_1
 	 b. **Service 2**: $ task service_2
 	 c. **Service 3**: $ task service_3_infra
 								  $ task service_3_dashboard (run Service Infrastructure first before running this)
- 14. To destroy all services (and the backend): `$ task destroy_services`
- 15. To destroy an individual service:
+ 4. To destroy all services (and the backend): `$ task destroy_services`
+ 5. To destroy an individual service:
 	 a. **Service 1**: $ task destroy_service_1
 	 b. **Service 2**: $ task destroy_service_2
 	 c. **Backend**: $ task destroy_backend
- 16. To test the services: $ task testing
+ 6. To test the services: $ task testing
+
  ℹ When creating a test service for your code, make sure you provision a separate backend to prevent your other infrastructure from being influenced by the test
 # Modules
 **This is a list of modules used by the services and their inputs/outputs**
