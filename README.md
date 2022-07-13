@@ -79,11 +79,11 @@ Service 1 (dash_and_infra template, 2 EC2 instances, 1 web server instance, 1 la
         │   │   ├── service_1.tfvars
         │   │   └── service_1.s3.tfbackend
 ```
-	
+
 :info: **Note: If you are creating lambda functions, you also need to add a .zip file of the code**
 
  3. Change the values of service_1 variables by opening the service_1.tfvars file
-	```
+```
         service_name      = "service_1"
         ec2_name_list     = ["Instance_1", "Instance_2"]
         server_name_list  = ["Server_1"]
@@ -95,21 +95,21 @@ Service 1 (dash_and_infra template, 2 EC2 instances, 1 web server instance, 1 la
         num_widgets       = 8
         width             = 4
         height            = 7
-        ```
+```
 	
 Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation](#dash_and_infra) for this template
 
  4. Change the values of service_1 backend variables by opening the service_1.s3.tfbackend file
-	```
+```
         bucket         = "sam-personal-tf-state"
         key            = "service_1/terraform.tfstate"
         region         = "us-east-1"
         dynamodb_table = "terraform_state_locking"
         encrypt        = true
-        ```
+```
 Each of these variables controls a different aspect of the terraform backend and is passed to both the versions.tf file and the appropriate template file
  5. Create a Taskfile for the service
-    ```
+```
     version: "3"
     
     tasks:
@@ -148,8 +148,8 @@ Each of these variables controls a different aspect of the terraform backend and
         cmds: 
           - terraform init -reconfigure -backend-config=../../service_1/service_1.s3.tfbackend
           - terraform destroy -auto-approve -var-file=../../service_1/service_1.tfvars -var-file=../../service_1/service_1.s3.tfbackend
-    ```
-    For more info on the Taskfile, go to: https://taskfile.dev/
+```
+For more info on the Taskfile, go to: https://taskfile.dev/
  
 Service 2 (dash_only template, 1 EC2 instance, 1 web server instance, 1 lambda function)
  6. Let’s start by making a folder inside of the examples directory for our service and switch to it
