@@ -106,7 +106,7 @@ Each of these variables controls a different aspect of our configuration. To see
         dynamodb_table = "terraform_state_locking"
         encrypt        = true
         ```
-	 Each of these variables controls a different aspect of the terraform backend and is passed to both the versions.tf file and the appropriate template file
+Each of these variables controls a different aspect of the terraform backend and is passed to both the versions.tf file and the appropriate template file
  5. Create a Taskfile for the service
 	 ```
     version: "3"
