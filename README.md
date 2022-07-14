@@ -3,7 +3,6 @@
 # Provisioning Templates
 **In order to support dashboards for both new and existing infrastructure, we have 2 options for provisioning the dashboard:**
 
-  
 `dash_and_infra`: Provisions infrastructure and a dashboard simultaneously. Useful for standing up services **and** continuous monitoring (managing infrastructure and dashboards with the **same** state).
  - Inputs
 	 - `service_name`: The name of the service
