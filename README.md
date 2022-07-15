@@ -78,7 +78,7 @@ Service 1 (`dash_and_infra` template, 2 EC2 instances, 1 web server instance, 1 
     width             = 4
     height            = 7
     ```
-    Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation] (# Provisioning Templates) for this template
+    Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation] (#Provisioning Templates) for this template
 4. 
 
 From the home directory (C1_SAIC_InternProg) run the Taskfile with the following commands from the command line:
