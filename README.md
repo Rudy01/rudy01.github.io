@@ -78,21 +78,158 @@ Service 1 (`dash_and_infra` template, 2 EC2 instances, 1 web server instance, 1 
     width             = 4
     height            = 7
     ```
-    Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation] (#Provisioning Templates) for this template
-4. 
+    Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation](#dash_and_infra) for this template
+4. Create a new workspace for this service in the `examples/templates/dash_and_infra` folder
+    ```
+    terraform workspace new service_1
+    ```
+    For more about terraform workspaces, please see State: [Workspaces | Terraform by HashiCorp](https://www.terraform.io/language/state/workspaces)
+5. Create a Taskfile for the service
+    ```
+    version: "3"
+    
+    tasks:
+      backend:
+        desc: deploy remote backend
+        dir: aws_backend
+        cmds:
+          - terraform init
+          - terraform apply -auto-approve
+      services:
+        desc: deploy all services
+        cmds:
+          - task backend service_1
+      destroy_services:
+        desc: destroy all services
+          - task destroy_service_1 destroy_backend
+      destroy_backend:
+        desc: destroying backend
+        dir: aws_backend
+        cmds:
+          - terraform init
+          - terraform destroy -auto-approve
+      service_1:
+          desc: deploy service 1
+          dir: examples/templates/dash_and_infra
+          cmds:
+        	- terraform workspace select service_1
+        	- terraform apply -auto-approve -var-file=../../service_1/service_1.tfvars
+      destroy_service_1:
+        desc: destroying service_1
+        dir: examples/templates/dash_and_infra
+        cmds: 
+          - terraform workspace select service_1
+          - terraform destroy -auto-approve -var-file=../../service_1/service_1.tfvars
+    ```
+    For more info on the Taskfile, go to: [Home | Task](https://taskfile.dev/)
+
+Service 2 (`dash_only` template, 1 EC2 instance, 1 web server instance, 1 lambda function)
+
+1. Let’s start by making a folder inside of the `examples` directory for our service and switch to it
+    ```
+    $ mkdir examples/service_2 && cd $_
+    --------------------
+    c1_saic_internprog/
+    ├── examples
+    │   ├── service_2
+    ```
+2. Next, make the necessary terraform files for this service
+    ```
+    $ mkdir examples/service_2 && cd $_
+    --------------------
+    c1_saic_internprog/
+    ├── examples
+    │   ├── service_2
+    ```
+3. Change the values of service_2 variables by opening the service_2.tfvars file
+	```
+	service_name      = "service_2"
+	list_of_emails    = ["John.Doe@saic.com", "Jane.Doe@saic.com"]
+	num_widgets       = 8
+	width             = 4
+	height            = 7
+	aws_region        = "us-east-1"
+	```
+    Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation](#dash_only) for this template
+4. Create a new workspace for this service in the `examples/templates/dash_only` directory
+    ```
+    $ terraform workspace new service_2
+    ```
+5. Add the service to the Taskfile
+    ```
+    version: "3"
+
+    tasks:
+        backend:
+            desc: deploy remote backend
+            dir: aws_backend
+            cmds:
+                - terraform init
+                - terraform apply -auto-approve
+        services:
+            desc: deploy all services
+            cmds:
+                - task backend service_1
+        destroy_services:
+            desc: destroy all services
+                - task destroy_service_1 destroy_backend
+        destroy_backend:
+            desc: destroying backend
+            dir: aws_backend
+            cmds:
+                - terraform init
+                - terraform destroy -auto-approve
+        service_1:
+            desc: deploy service 1
+            dir: examples/templates/dash_and_infra
+            cmds:
+                - terraform workspace select service_1
+                - terraform apply -auto-approve -var-file=../../service_1/service_1.tfvars
+        destroy_service_1:
+            desc: destroying service_1
+            dir: examples/templates/dash_and_infra
+            cmds: 
+                - terraform workspace select service_1
+                - terraform destroy -auto-approve -var-file=../../service_1/service_1.tfvars
+        service_2:
+            desc: deploy service 2
+            dir: examples/templates/dash_only
+            cmds:
+                - aws lambda list-functions > ../../../modules/lambda_data/output.json
+                - terraform workspace select service_2
+                - terraform apply -auto-approve -var-file=../../service_2/service_2.tfvars
+        destroy_service_2:
+            desc: destroying service_2
+            dir: examples/templates/dash_only
+            cmds:
+                - terraform workspace select service_2 
+                - terraform destroy -auto-approve -var-file=../../service_2/service_2.tfvars
+    ```
+	For dash_only services, it is a best practice to refresh the list of active lambda functions before provisioning any new dashboards, as there may have been functions added since the last refresh
+
+	Each time you add a new service, you will need to:
+	
+		a. Add provisioning and deprovisioning tasks for the service (service_2 and destroy_service_2)
+		b. Add those tasks to the global provisioning and deprovisioning tasks (services and destroy_services)
+	
+	For more info on the Taskfile, go to: [Home | Task](https://taskfile.dev/)
 
 From the home directory (C1_SAIC_InternProg) run the Taskfile with the following commands from the command line:
-- Before provisioning any services, provision a remote backend: `$ task backend`
-- To deploy all services: `$ task services`
-- To run an individual service:
-  - Service 1: `$ task service_1`
-  - Service 2: `$ task service_2`
-- To destroy all services (and the backend): `$ task destroy_services`
-- To destroy an individual service:
-  - Service 1: `$ task destroy_service_1`
-  - Service 2: `$ task destroy_service_2`
-- Backend: `$ task destroy_backend`
-- To test the services: `$ task testing`
+1. Before provisioning any services, provision a remote backend: `$ task backend`
+2. To deploy all services: `$ task services`
+3. To run an individual service:
+
+	a. Service 1: `$ task service_1`
+	
+	b. Service 2: `$ task service_2`
+4. To destroy all services (and the backend): `$ task destroy_services`
+5. To destroy an individual service:
+
+	a. Service 1: `$ task destroy_service_1`
+	
+	b. Service 2: `$ task destroy_service_2`
+6. Backend: `$ task destroy_backend`
+7. To test the services: `$ task testing`
 
 :information_source: When creating a test service for your code, make sure you provision a separate backend to prevent your other infrastructure from being influenced by the test
 
