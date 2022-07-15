@@ -1,3 +1,6 @@
+# C1_SAIC_InternProg
+This is the project space for SAIC Interns
+
 **This document will detail the implementation and usage for the intern dashboard project. This project uses Terraform to automatically provision CloudWatch alarms and dashboards for services in two different ways: either at the same time as AWS resources are being provisioned, or after the service’s resources have already been provisioned.**
 
 # Provisioning Templates
