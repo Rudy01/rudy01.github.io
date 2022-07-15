@@ -10,3 +10,7 @@
 .list {
 	list-style-type: circle;
 }
+
+.tab {
+	tab-size: 4;
+}
