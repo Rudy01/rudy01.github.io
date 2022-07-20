@@ -8,41 +8,70 @@ This is the project space for SAIC Interns
 # Provisioning Templates
 **In order to support dashboards for both new and existing infrastructure, we have 2 options for provisioning the dashboard:**
 
-`dash_and_infra`: Provisions infrastructure and a dashboard simultaneously. Useful for standing up services and continuous monitoring (managing infrastructure and dashboards with the same state).
+`dash_and_infra`: Provisions infrastructure and a dashboard simultaneously. Useful for standing up services **and** continuous monitoring (managing infrastructure and dashboards with the **same** state).
 - Inputs
-   - `service_name`: The name of the service
-   - `ec2_name_list`:  A list of the EC2 instances associated with the service
-   - `server_name_list`:  A list of the web servers associated with the service
-   - `server_ami`: The AMI of the server (Describes what OS the server will operate on)
-   - `filename_list`: A list of files names (one per lambda function).
-     - Add these as .zip files to the project directory
-   - `availability_zone`: The availability zone of the service
-   - `list_of_emails`: A list of emails that should be notified when an alarm triggers in the service
-   - `num_widgets`: The maximum number of widgets that should appear on each row
-   - `width`: The width of the widgets
-   - `height`: The height of the widgets
-   - `aws_region`: The AWS region to provision to
+	- `service_name`: The name of the service
+	- `ec2_name_list`:  A list of the EC2 instances associated with the service
+	- `servers`:  A list of the web servers associated with the service and their attributes
+	- `name`: The name of the server instance
+	- `security_group_index`: The index of security groups that will apply to this server. Taken from the indices of the security_groups object defined below
+	- `subnet_index`: The index of the subnet the server will be in. Taken from the indices of the subnets object defined below
+	- `private_ips`: The IP address (or addresses) associated with the server.
+	- `server_ami`: The AMI of the server (Describes what OS the server will operate on)
+	- `filename_list`: A list of files names (one per lambda function). 
+		- **Add these as .zip files to the project directory**
+	- `availability_zone`: The availability zone of the service
+	- `subnets`: An object containing the subnet names and route tables associated with those subnets
+		- `subnet_name`: The name of the subnet
+		- `route_table_index`: The index of the route table that will be assigned to the subnet. Taken from the route_tables object defined below
+		- `cidr_block`: The CIDR block associated with the subnet
+	- `list_of_emails`: A list of emails that should be notified when an alarm triggers in the service.
+		- **Must include only SAIC emails**
+	- `num_widgets`: The maximum number of widgets that should appear on each row
+	- `width`: The width of the widgets
+	- `height`: The height of the widgets
+	- `aws_region`: The AWS region to provision to
+	- `route_tables`: A list of route tables, which each contain a list of CIDR blocks associated with the route table
+	- `security_groups`: A list of all security groups and their attributes
+		- `security_group_name`: The name of the security group
+		- `description`: A description of what the security group does
+		- `rules`: Describes the rules for the security group
+			- `from_port`: The source port of traffic
+			- `to_port`: The destination port of traffic
+			- `protocol`: The protocol (TCP/UDP) used
+			- `type`: Whether traffic is coming in (ingress) or going out (egress)
+	- `network_acls`: A list of all network ACLs and their attributes
+		- `network_acl_name`: The name of the network ACL
+		- `rules`: Describes the rules for the NACL
+			- `from_port`: The source port of traffic
+			- `to_port`: The destination port of traffic
+			- `protocol`: The protocol (TCP/UDP) used
+			- `rule_action`: Whether to allow or deny traffic
+			- `rule_number`: The numerical order of the rule. Rules are executed in order
+			- `egress`: Does this rule applies to outgoing traffic too, or just incoming traffic (true/false)?
 - Outputs
-  - `list_of_alarm_arns`: A list of all alarms provisioned for the service. Used to create an overview dashboard
-  - `mode`: Validates that the same template is always run (`dash_and_infra` or `dash_only`)
+	- `list_of_alarm_arns`: A list of all alarms provisioned for the service. Used to create an overview dashboard
+	- `mode`: Validates that the same template is always run (dash_and_infra or dash_only)
+	- `public_ip`: Outputs the public IP address of the web server so it can be http-checked in our tests
 
-`dash_only`: Provisions an alarm dashboard by searching for existing infrastructure with a given Service tag. Useful for adding continuous monitoring to existing resources/services (created outside of terraform or managed by a different terraform state).
+`dash_only`: Provisions an alarm dashboard by searching for existing infrastructure with a given Service tag. Useful for adding continuous monitoring to existing resources/services (created **outside** of terraform or managed by a **different** terraform state).
 - Inputs
-  - `service_name`: The name of the service
-  - `list_of_emails`: A list of emails that should be notified when an alarm triggers in the service
-  - `num_widgets`: The maximum number of widgets that should appear on each row
-  - `width`: The width of the widgets
-  - `height`: The height of the widgets
-  - `aws_region`: The AWS region to provision to
+	- `service_name`: The name of the service
+	- `aws_region`: The AWS region to provision to
+	- `list_of_emails`: A list of emails that should be notified when an alarm triggers in the service
+		- **Must include only SAIC emails**
+	- `num_widgets`: The maximum number of widgets that should appear on each row
+	- `width`: The width of the widgets
+	- `height`: The height of the widgets
 - Outputs
   - `list_of_alarm_arns`: A list of all alarms provisioned for the service. Used to create an overview dashboard
   - `mode`: Validates that the same template is always run (`dash_and_infra` or `dash_only`)
   
-  **NOTE: DO NOT SWITCH WHICH TEMPLATE YOU USE FOR A SERVICE ONCE YOU HAVE PROVISIONED ITS DASHBOARD.**
+  :warning: **NOTE: DO NOT SWITCH WHICH TEMPLATE YOU USE FOR A SERVICE ONCE YOU HAVE PROVISIONED ITS DASHBOARD.**
 
-**Terraform relies on a state file to keep track of the resources it manages, so if you switch from** `dash_and_infra` **to** `dash_only` **without removing your infrastructure from the state file, terraform _will_ destroy your infrastructure.**
+**Terraform relies on a state file to keep track of the resources it manages, so if you switch from** `dash_and_infra` **to** `dash_only` **without removing your infrastructure from the state file, terraform will destroy your infrastructure.**
 
-**Switching from** `dash_only` **to** `dash_and_infra` **is also not advised, since it can result in resource duplication unless you add all of your infrastructure to a .tfvars file and the state first (assuming that infrastructure is supported by our infra modules).**
+**Switching from** `dash_only` to `dash_and_infra` **is also not advised, since it can result in resource duplication unless you add all of your infrastructure to a .tfvars file and the state first (assuming that infrastructure is supported by our infra modules).**
 
 **We have error handling in place to prevent swaps between templates for active services. If you would like to switch templates, please de-provision all managed resources before trying to run the service with a different template.**
 
@@ -240,91 +269,160 @@ From the home directory (C1_SAIC_InternProg) run the Taskfile with the following
 
 # Modules
 **This is a list of modules used by the services and their inputs/outputs**
- - `composite_alarms`: Provision a composite alarm for a service
-	 - Inputs
-		 - `service_name`: The name of the service you’re making the alarm for
-		 - `alarm_text`: A formatted string containing all of the alarms associated with a service Automatically provisioned based on the list_of_alarm_arns output in the service’s remote state file
-	 - Outputs
-		 - `alarm_arn`: The ARN of the generated composite alarm.
- - `dashboard`: Create a CloudWatch dashboard for a service
-	 - Inputs
-		 - `service_name`: The name of the service dashboard being generated
-		 - `json`: The JSON-formatted template that defines what the dashboard will look like Automatically generated by the json_formatting [module](#json-formatting)
-	 - Outputs
-		 - None
- - `ec2`: Provision EC2 instances
-	 - Inputs
-		 - `availability_zone`: The AWS availability zone to provision the instance to
-		 - `tags`: The Name (instance name) and Service (service name) tags associated with an instance
-	 - Outputs
-		 - `instance_id`: The Instance ID of the EC2 instance
-		 - `instance_name`: The name of the EC2 instance
- - `ec2_alarms`: Provision alarms for EC2 instances
-	 - Inputs
-		 - `ec2_instance_id`: The instance ID of the target EC2 instance
-		 - `ec2_instance_name`: The instance name of the target EC2 instance
-		 - `sns_arn:` The ARN of the appropriate SNS topic based on service
-		 - `tags`: The tags associated with the widget alarms
-	 - Outputs
-		 - `list_of_alarm_arns`: A list of all of the alarm ARNs for the widget
-		 - `ec2_instance_name`: The instance name of the target EC2 instance
- - `ec2_data`: Gather the names and ids of the EC2 instances
-	 - Inputs
-		 - `service_name`: The name of the service the instances are being provisioned for
-	 - Outputs
-		 - `ids_list`: A list of EC2 instance IDs for that service
-		 - `names_list`: A list of EC2 instance IDs for that service
- - `json_formatting`: Format the JSON file for the target dashboard
-	 - Inputs
-		 - `list_of_widgets`: A list of objects representing each widget that is going in the dashboard. Automatically generated using the output from the ‘*_alarms’ modules.
-		 - `num_widgets`: The maximum number of widgets in a row of the dashboard
-		 - `width`: The width of a widget on the dashboard
-		 - `height`: The height of a widget on the dashboard
-	 - Outputs
-		 - `widget_json`: A formatted JSON string containing the dashboard body of the target dashboard
- - `lambda`: Provision Lambda functions
-	 - Inputs
-		 - `tags`: All applicable tags to the lambda instance
-		 - `filename`: The path to the .zip file that contains your Lambda function code
-		 - `service_name`: The service you are provisioning for
-		 - `role_arn`: The role ARN for Lambda IAM
-	 - Outputs
-		 - `function_name`: The name of the Lambda function you just provisioned
- - `lambda_alarms`: Provision alarms for Lambda function
-	 - Inputs
-		 - `function_name`: Name of target Lambda function
-		 - `sns_arn`: ARN of the appropriate SNS topic based on service name
-		 - `tags`: Tags associated with widget alarms
-	 - Outputs
-		 - `list_of_alarm_arns`: A list of all of the alarm ARNs for the widget
-		 - `function_name`: The function name of the target Lambda function
- - `lambda_data`: Gather a list of Lambda functions associated with a service
-	 - Inputs
-		 - `service_name`: The name of the service you are provisioning alarms for
-	 - Outputs
-		 - `function_list`: A list of Lambda functions associated with that service
- - `lambda_iam`: Provision service-specific roles for a Lambda function
-	 - Inputs
-		 - `service_name`: The service to provision for
-	 - Outputs
-		 - `role_arn`: The service to provision for
- - `networking`: Create network infrastructure for servers
-	 - Inputs
-		 - `interface_name`: The name of the network interface you're provisioning. Usually the same as the instance name
-	 - Outputs
-		 - `nic_id`: The ID of the network interface
- - `sns`: Create a service topic in AWS SNS and subscribe everyone in list_of_emails to it
-	 - Inputs
-		 - `list_of_emails`: A list of people who you want to receive notifications for an SNS topic
-		 - `name`: The name of the SNS topic (usually service name)
-	 - Outputs
-		 - None
- - `server`: Provision web server EC2 instances
-	 - Inputs
-		 - `nic_id`: The ID of the network interface
-		 - `tags`: All applicable tags for the newly provisioned web server
-		 - `availability_zone`: The specific availability zone to provision to
-		 - `ami`: The AMI of the servers you'd like to provision
-	 - Outputs
-		 - `instance_id`: The Instance ID of the web server EC2 instance
-		 - `instance_name`: The name of the web server EC2 instance
+- composite_alarms: Provision a composite alarm for a service
+	- Inputs
+		- service_name: The name of the service you’re making the alarm for
+		- alarm_text: A formatted string containing all of the alarms associated with a service Automatically provisioned based on the list_of_alarm_arns output in the service’s remote state file
+	- Outputs
+		- alarm_arn: The ARN of the generated composite alarm.
+- dashboard: Create a CloudWatch dashboard for a service
+	- Inputs
+		- service_name: The name of the service dashboard being generated
+		- json: The JSON-formatted template that defines what the dashboard will look like Automatically generated by the json_formatting [module](#json-formatting)
+	- Outputs
+		- None
+- ec2: Provision EC2 instances
+	- Inputs
+		- availability_zone: The AWS availability zone to provision the instance to
+		- tags: The Name (instance name) and Service (service name) tags associated with an instance
+	- Outputs
+		- instance_id: The Instance ID of the EC2 instance
+		- instance_name: The name of the EC2 instance
+- ec2_alarms: Provision alarms for EC2 instances
+	- Inputs
+		- ec2_instance_id: The instance ID of the target EC2 instance
+		- ec2_instance_name: The instance name of the target EC2 instance
+		- sns_arn: The ARN of the appropriate SNS topic based on service
+		- tags: The tags associated with the widget alarms
+	- Outputs
+		- list_of_alarm_arns: A list of all of the alarm ARNs for the widget
+		- ec2_instance_name: The instance name of the target EC2 instance
+- ec2_data: Gather the names and ids of the EC2 instances
+	- Inputs
+		- service_name: The name of the service the instances are being provisioned for
+	- Outputs
+		- ids_list: A list of EC2 instance IDs for that service
+		- names_list: A list of EC2 instance IDs for that service
+- internet_gateway: Provision an internet gateway for a VPC
+	- Inputs
+		- vpc_id: The ID of the VPC to provision to
+		- internet_gateway_name: The name of the internet gateway
+	- Outputs
+		- internet_gateway_id: The ID of the internet gateway being provisioned
+- json_formatting: Format the JSON file for the target dashboard
+	- Inputs
+		- list_of_widgets: A list of objects representing each widget that is going in the dashboard. Automatically generated using the output from the '*_alarms' modules
+		- num_widgets: The maximum number of widgets in a row of the dashboard
+		- width: The width of a widget on the dashboard
+		- height: The height of a widget on the dashboard
+	- Outputs
+		- widget_json: A formatted JSON string containing the dashboard body of the target dashboard
+- lambda: Provision Lambda functions
+	- Inputs
+		- tags: All applicable tags to the lambda instance
+		- filename: The path to the .zip file that contains your Lambda function code
+		- service_name: The service you are provisioning for
+		- role_arn: The role ARN for Lambda IAM
+	- Outputs
+		- function_name: The name of the Lambda function you just provisioned
+- lambda_alarms: Provision alarms for Lambda function
+	- Inputs
+		- function_name: Name of target Lambda function
+		- sns_arn: ARN of the appropriate SNS topic based on service name
+		- tags: Tags associated with widget alarms
+	- Outputs
+		- list_of_alarm_arns: A list of all of the alarm ARNs for the widget
+		- function_name: The function name of the target Lambda function
+- lambda_data: Gather a list of Lambda functions associated with a service
+	- Inputs
+		- service_name : The name of the service you are provisioning alarms for
+	- Outputs
+		- function_list : A list of Lambda functions associated with that service
+- lambda_iam: Provision service-specific roles for a Lambda function
+	- Inputs
+		- service_name: The service to provision for
+	- Outputs
+		- role_arn: The ARN of the role being provisioned
+- nacl: Provision Network ACL for a VPC
+	- Inputs
+		- network_acl_name: The name of the Network ACL being provisioned
+		- vpc_id: The ID of the VPC the Network ACL will be assigned to
+		- rules: A map of the rules list to be associated with the network acl. Contains an indexed list of from_ports, to_ports, protocols, rule actions, rules numbers, and egress states for each rule in the Network ACL
+		- cidr_block: CIDR block associated with the VPC
+	- Outputs
+		- network_acl_id: The ID of the Network ACL being provisioned
+- route_table: Provision route tables for an internet gateway within a VPC
+	- Inputs
+		- vpc_id: The ID of the VPC to provision to
+		- internet_gateway_id: The ID of the internet gateway the route table is associated with
+		- route_table_name: The name of the route table being provisioned
+		- cidr_blocks: The list of CIDR block addresses
+	- Outputs
+		- route_table_id: The ID of the route table being provisioned
+- security_groups: Provision security groups for a VPC
+	- Inputs
+		- security_group_name: The name of the security group being provisioned
+		- description: The name of the security group being provisioned
+		- vpc_id: The ID of the VPC the security group will be assigned to
+		- rules: A map of the rules list to be associated with the security group. Contains an indexed list of from_ports, to_ports, protocols, and rule types for each rule in the security group
+		- cidr_blocks: CIDR blocks associated with the VPC
+	- Outputs
+		- security_group_id: The ID of the security group being provisioned
+- server: Provision web server EC2 instances
+	- Inputs
+		- tags: All applicable tags for the newly provisioned web server
+		- availability_zone : The specific availability zone to provision to
+		- ami: The AMI of the servers you'd like to provision
+		- security_group: ID of the security group that should apply to the server's network interface
+		- subnet_id: The ID of the subnet the network interface will be associated with
+		- private_ips: The IP addresses of the server's private network interface
+	- Outputs
+		- instance_id: The Instance ID of the web server EC2 instance
+		- instance_name: The name of the web server EC2 instance
+- sns: Create a service topic in AWS SNS and subscribe everyone in list_of_emails to it
+	- Inputs
+		- list_of_emails: A list of people who you want to receive notifications for an SNS topic
+		- name: The name of the SNS topic (usually service name)
+	- Outputs
+		- None
+- subnet: Provision subnets for a VPC
+	- Inputs
+		- vpc_id: The ID of the VPC to provision to
+		- availability_zone: The availability zone of the subnet
+		- subnet_name: The name of the subnet
+		- cidr_block: Defines the range of IP addresses that the subnet can occupy
+		- route_table_id: The ID of the route table that is being assigned to this subnet
+	- Outputs
+		- subnet_id: The ID of the subnet being provisioned
+		- cidr_block: The CIDR block occupied by the subnet
+- vpc: Provision a VPC
+	- Inputs
+		- service_name: The service the VPC is associated with
+	- Outputs
+		- vpc_id: The ID of the VPC
+		- cidr_blocks: The CIDR blocks associated with the VPC
+- vpc_alarms: Provision alarms for a VPC
+	- Inputs
+		- vpc_name: The name of the VPC you're provisioning alarms for
+		- sns_arn: ARN of the appropriate SNS topic based on service
+		- tags: Tags associated with widget alarms
+	- Outputs
+		- list_of_alarm_arns: A list of the alarm ARNs generated for a VPC
+		- vpc_name: The name of the VPC the alarms were provisioned for
+- vpc_data: Reads the list of active VPCs for alarm provisioning (used in dash_only)
+	- Inputs
+		- service_name: The service the VPC belongs to
+	- Outputs
+		- list_of_vpcs: A list of IDs corresponding to all active VPCs
+- vpc_flow_log: Creates a log for the VPC
+	- Inputs
+		- log_group_name: The name of the CloudWatch log group associated with the flow log
+		- vpc_id: The ID of the VPC you'd like to create a flow log for
+		- traffic_type: The type of traffic to log
+	- Outputs
+		- log_group_name: The name of the CloudWatch log group associated with the flow log
+- vpc_metric_filter: Creates metric filters to turn log data into VPC metrics (for use in alarms)
+	- Inputs
+		- log_group_name: The name of the CloudWatch log group associated with the flow log
+	- Outputs
+		- None
