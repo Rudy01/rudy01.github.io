@@ -18,7 +18,7 @@ This is the project space for SAIC Interns
 	- `subnet_index`: The index of the subnet the server will be in. Taken from the indices of the subnets object defined below
 	- `private_ips`: The IP address (or addresses) associated with the server.
 	- `server_ami`: The AMI of the server (Describes what OS the server will operate on)
-	- `filename_list`: A list of files names (one per lambda function). 
+	- `filename_list`: A list of files names (one per lambda function).
 		- **Add these as .zip files to the project directory**
 	- `availability_zone`: The availability zone of the service
 	- `subnets`: An object containing the subnet names and route tables associated with those subnets
