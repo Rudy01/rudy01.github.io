@@ -64,8 +64,8 @@ This is the project space for SAIC Interns
 	- `width`: The width of the widgets
 	- `height`: The height of the widgets
 - Outputs
-  - `list_of_alarm_arns`: A list of all alarms provisioned for the service. Used to create an overview dashboard
-  - `mode`: Validates that the same template is always run (`dash_and_infra` or `dash_only`)
+	- `list_of_alarm_arns`: A list of all alarms provisioned for the service. Used to create an overview dashboard
+	- `mode`: Validates that the same template is always run (`dash_and_infra` or `dash_only`)
   
   :warning: **NOTE: DO NOT SWITCH WHICH TEMPLATE YOU USE FOR A SERVICE ONCE YOU HAVE PROVISIONED ITS DASHBOARD.**
 
@@ -78,7 +78,8 @@ This is the project space for SAIC Interns
 # Usage
 **Let’s walk through how to make some example services:**
 
-Service 1 (`dash_and_infra` template, 2 EC2 instances, 1 web server instance, 1 lambda function)
+Service 1 (`dash_and_infra` template, 2 EC2 instances, 1 web server instance, 1 VPC, 2 subnets, 3 security groups, 1 route table, 1 lambda function)
+
 1. Let’s start by making a folder inside of the `examples` directory for our service and switch to it
     ```
     $ mkdir examples/service_1 && cd $_
@@ -100,22 +101,66 @@ Service 1 (`dash_and_infra` template, 2 EC2 instances, 1 web server instance, 1 
     :information_source: **Note: If you are creating lambda functions, you also need to add a .zip file of the code**
 3. Change the values of service_1 variables by opening the service_1.tfvars file
     ```
-    service_name      = "service_1"
-    ec2_name_list     = ["Instance_1", "Instance_2"]
-    server_name_list  = ["Server_1"]
+    service_name  = "service_1"
+    ec2_name_list = ["Instance_1", "Instance_2"]
+    servers = [{
+      name                   = "Server_1"
+      security_group_index   = 0
+      subnet_index           = 0
+      private_ips            = ["10.0.1.50"]
+      }]
     filename_list     = ["hello_python.zip"]
     aws_region        = "us-east-1"
     availability_zone = "us-east-1a"
     server_ami        = "ami-052efd3df9dad4825"
-    list_of_emails    = ["John.Doe@saic.com", "Jane.Doe@saic.com"]
-    num_widgets       = 8
+    list_of_emails    = ["John.Doe@saic.com"]
+    num_widgets       = 6
     width             = 4
     height            = 7
+    
+    route_tables = [["0.0.0.0/0"]]
+    
+    subnets = [{
+      subnet_name       = "subnet_1"
+      cidr_block        = "10.0.1.0/24"
+      route_table_index = 0
+      },
+      {
+        subnet_name       = "subnet_2"
+        cidr_block        = "10.0.2.0/24"
+        route_table_index = 0
+    }]
+    
+    security_groups = [{
+      security_group_name = "internet"
+      description         = "Allows HTTP and HTTPS traffic"
+      rules = [{
+        from_port = 443
+        to_port   = 443
+        protocol  = "tcp"
+        type      = "ingress"
+        },
+        {
+          from_port = 80
+          to_port   = 80
+          protocol  = "tcp"
+          type      = "ingress"
+        },
+        {
+          from_port = 0
+          to_port   = 0
+          protocol  = "-1"
+         type      = "egress"
+      }] }
+    ]
+    
+    network_acls = []
     ```
-    Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation](#dash_and_infra) for this template
+    Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation](#Provisioning Templates
+) for this template
 4. Create a new workspace for this service in the `examples/templates/dash_and_infra` folder
     ```
-    terraform workspace new service_1
+    $ terraform workspace new service_1
     ```
     For more about terraform workspaces, please see State: [Workspaces | Terraform by HashiCorp](https://www.terraform.io/language/state/workspaces)
 5. Create a Taskfile for the service
@@ -146,8 +191,8 @@ Service 1 (`dash_and_infra` template, 2 EC2 instances, 1 web server instance, 1 
           desc: deploy service 1
           dir: examples/templates/dash_and_infra
           cmds:
-        	- terraform workspace select service_1
-        	- terraform apply -auto-approve -var-file=../../service_1/service_1.tfvars
+            - terraform workspace select service_1
+            - terraform apply -auto-approve -var-file=../../service_1/service_1.tfvars
       destroy_service_1:
         desc: destroying service_1
         dir: examples/templates/dash_and_infra
@@ -165,26 +210,27 @@ Service 2 (`dash_only` template, 1 EC2 instance, 1 web server instance, 1 lambda
     --------------------
     c1_saic_internprog/
     ├── examples
-    │   ├── service_2
+    │   ├── service_2
     ```
 2. Next, make the necessary terraform files for this service
     ```
-    $ mkdir examples/service_2 && cd $_
+    $ echo > service_2.tfvars
     --------------------
     c1_saic_internprog/
     ├── examples
     │   ├── service_2
+    │   │   ├── service_2.tfvars
     ```
 3. Change the values of service_2 variables by opening the service_2.tfvars file
-	```
-	service_name      = "service_2"
-	list_of_emails    = ["John.Doe@saic.com", "Jane.Doe@saic.com"]
-	num_widgets       = 8
-	width             = 4
-	height            = 7
-	aws_region        = "us-east-1"
-	```
-    Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation](#dash_only) for this template
+    ```
+    service_name      = "service_2"
+    list_of_emails    = ["John.Doe@saic.com", "Jane.Doe@saic.com"]
+    num_widgets       = 8
+    width             = 4
+    height            = 7
+    aws_region        = "us-east-1"
+    ```
+    Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the inputs documentation for this template
 4. Create a new workspace for this service in the `examples/templates/dash_only` directory
     ```
     $ terraform workspace new service_2
@@ -192,63 +238,63 @@ Service 2 (`dash_only` template, 1 EC2 instance, 1 web server instance, 1 lambda
 5. Add the service to the Taskfile
     ```
     version: "3"
-
+    
     tasks:
-        backend:
-            desc: deploy remote backend
-            dir: aws_backend
-            cmds:
-                - terraform init
-                - terraform apply -auto-approve
-        services:
-            desc: deploy all services
-            cmds:
-                - task backend service_1
-        destroy_services:
-            desc: destroy all services
-                - task destroy_service_1 destroy_backend
-        destroy_backend:
-            desc: destroying backend
-            dir: aws_backend
-            cmds:
-                - terraform init
-                - terraform destroy -auto-approve
-        service_1:
-            desc: deploy service 1
-            dir: examples/templates/dash_and_infra
-            cmds:
-                - terraform workspace select service_1
-                - terraform apply -auto-approve -var-file=../../service_1/service_1.tfvars
-        destroy_service_1:
-            desc: destroying service_1
-            dir: examples/templates/dash_and_infra
-            cmds: 
-                - terraform workspace select service_1
-                - terraform destroy -auto-approve -var-file=../../service_1/service_1.tfvars
-        service_2:
-            desc: deploy service 2
-            dir: examples/templates/dash_only
-            cmds:
-                - aws lambda list-functions > ../../../modules/lambda_data/output.json
-                - terraform workspace select service_2
-                - terraform apply -auto-approve -var-file=../../service_2/service_2.tfvars
-        destroy_service_2:
-            desc: destroying service_2
-            dir: examples/templates/dash_only
-            cmds:
-                - terraform workspace select service_2 
-                - terraform destroy -auto-approve -var-file=../../service_2/service_2.tfvars
+      backend:
+        desc: deploy remote backend
+        dir: aws_backend
+        cmds:
+          - terraform init
+          - terraform apply -auto-approve
+      services:
+        desc: deploy all services
+        cmds:
+          - task backend service_1
+      destroy_services:
+        desc: destroy all services
+          - task destroy_service_1 destroy_backend
+      destroy_backend:
+        desc: destroying backend
+        dir: aws_backend
+        cmds:
+          - terraform init
+          - terraform destroy -auto-approve
+      service_1:
+          desc: deploy service 1
+          dir: examples/templates/dash_and_infra
+          cmds:
+            - terraform workspace select service_1
+            - terraform apply -auto-approve -var-file=../../service_1/service_1.tfvars
+      destroy_service_1:
+        desc: destroying service_1
+        dir: examples/templates/dash_and_infra
+        cmds: 
+          - terraform workspace select service_1
+          - terraform destroy -auto-approve -var-file=../../service_1/service_1.tfvars
+      service_2:
+        desc: deploy service 2
+        dir: examples/templates/dash_only
+        cmds:
+          - aws lambda list-functions > ../../../modules/lambda_data/output.json
+          - terraform workspace select service_2
+          - terraform apply -auto-approve -var-file=../../service_2/service_2.tfvars
+      destroy_service_2:
+        desc: destroying service_2
+        dir: examples/templates/dash_only
+        cmds:
+          - terraform workspace select service_2 
+          - terraform destroy -auto-approve -var-file=../../service_2/service_2.tfvars
     ```
-	For dash_only services, it is a best practice to refresh the list of active lambda functions before provisioning any new dashboards, as there may have been functions added since the last refresh
+	**For dash_only services, it is a best practice to refresh the list of active lambda functions before provisioning any new dashboards, as there may have been functions added since the last refresh**
 
 	Each time you add a new service, you will need to:
 	
-		a. Add provisioning and deprovisioning tasks for the service (service_2 and destroy_service_2)
-		b. Add those tasks to the global provisioning and deprovisioning tasks (services and destroy_services)
-	
+	    a. Add provisioning and deprovisioning tasks for the service (service_2 and destroy_service_2)
+	    b. Add those tasks to the global provisioning and deprovisioning tasks (services and destroy_services)
 	For more info on the Taskfile, go to: [Home | Task](https://taskfile.dev/)
 
-From the home directory (C1_SAIC_InternProg) run the Taskfile with the following commands from the command line:
+
+**From the home directory (C1_SAIC_InternProg) run the Taskfile with the following commands from the command line:**
 1. Before provisioning any services, provision a remote backend: `$ task backend`
 2. To deploy all services: `$ task services`
 3. To run an individual service:
@@ -263,7 +309,7 @@ From the home directory (C1_SAIC_InternProg) run the Taskfile with the following
 	
 	b. Service 2: `$ task destroy_service_2`
 6. Backend: `$ task destroy_backend`
-7. To test the services: `$ task testing`
+7. To test the services: `$ task test`
 
 :information_source: When creating a test service for your code, make sure you provision a separate backend to prevent your other infrastructure from being influenced by the test
 
