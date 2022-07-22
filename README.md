@@ -156,8 +156,7 @@ Service 1 (`dash_and_infra` template, 2 EC2 instances, 1 web server instance, 1 
     
     network_acls = []
     ```
-    Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation](#Provisioning Templates
-) for this template
+    Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation](#Provisioning Templates) for this template
 4. Create a new workspace for this service in the `examples/templates/dash_and_infra` folder
     ```
     $ terraform workspace new service_1
@@ -230,7 +229,7 @@ Service 2 (`dash_only` template, 1 EC2 instance, 1 web server instance, 1 lambda
     height            = 7
     aws_region        = "us-east-1"
     ```
-    Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the inputs documentation for this template
+    Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation](#Provisioning Templates) for this template
 4. Create a new workspace for this service in the `examples/templates/dash_only` directory
     ```
     $ terraform workspace new service_2
