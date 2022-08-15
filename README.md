@@ -210,7 +210,7 @@ This is the project space for SAIC Interns
   - `aws_region`: The AWS region to provision to
   - `eks_clusters`: Outputs a map of EKS clusters and the users to be given admin access to them
   - `list_of_alarm_arns`: A list of all alarms provisioned for the service. Used to create an overview dashboard
-  - mode: Validates that the same template is always run (dash_and_infra or dash_only)
+  - `mode`: Validates that the same template is always run (dash_and_infra or dash_only)
   - `public_ip`: Outputs the public IP address of the web server so it can be http-checked in our tests
 - 
 
@@ -227,6 +227,14 @@ This is the project space for SAIC Interns
   - `list_of_alarm_arns`: A list of all alarms provisioned for the service. Used to create an overview dashboard
   - `mode`: Validates that the same template is always run (`dash_and_infra` or `dash_only`)
 
+:warning: **NOTE: DO NOT SWITCH WHICH TEMPLATE YOU USE FOR A SERVICE ONCE YOU HAVE PROVISIONED ITS DASHBOARD.**
+
+**Terraform relies on a state file to keep track of the resources it manages, so if you switch from `dash_and_infra` to `dash_only` without removing your infrastructure from the state file, terraform will destroy your infrastructure.**
+
+**Switching from `dash_only` to `dash_and_infra` is also not advised, since it can result in resource duplication unless you add all of your infrastructure to a .tfvars file and the state first (assuming that infrastructure is supported by our infra modules).**
+
+**We have error handling in place to prevent swaps between templates for active services. If you would like to switch templates, please de-provision all managed resources before trying to run the service with a different template.**
+
 # Usage
 **Let’s walk through how to make an example service that uses each of our modules with a `dash_and_infra` implementation or a `dash_only` (and `infra_only` for testing purposes) implementation. Both of these examples can be found in the `examples` directory of the repo:**
 
@@ -235,9 +243,9 @@ Unfortunately, Terraform does not have support for all AWS API calls. If/when yo
 
 `aws.sh` should be run **before** provisioning dash_only services. kube_config.sh should be run after provisioning dash_and_infra or infra_only services that require Kubernetes permissions/monitoring configuration.
 
-:information_source: kube_config.sh does install the CloudWatch agent on your Kubernetes cluster
+:information_source: kube_config.sh does install the [CloudWatch agent](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/deploy-container-insights-EKS.html) on your Kubernetes cluster
 
-Simultaneous (`dash_and_infra` template, 2 EC2 instances, 3 server EC2 instances (2 used in containers), 2 lambda functions, 1 VPC, 4 subnets, 4 route tables, 2 NAT gateways, 1 security group, 1 ECS-EC2 task, 1 ECS-Fargate task, 1 ECS cluster, 1 EKS cluster, 1 EKS-Fargate profile, 1 EKS-EC2 node group, and 1 Elastic Beanstalk app (with 1 environment))
+**Simultaneous (`dash_and_infra` template, 2 EC2 instances, 3 server EC2 instances (2 used in containers), 2 lambda functions, 1 VPC, 4 subnets, 4 route tables, 2 NAT gateways, 1 security group, 1 ECS-EC2 task, 1 ECS-Fargate task, 1 ECS cluster, 1 EKS cluster, 1 EKS-Fargate profile, 1 EKS-EC2 node group, and 1 Elastic Beanstalk app (with 1 environment))**
 1. Let’s start by making a folder inside of the examples directory for our service and switch to it
    ```
    $ mkdir examples/simultaneous && cd $_
@@ -257,20 +265,521 @@ Simultaneous (`dash_and_infra` template, 2 EC2 instances, 3 server EC2 instances
    │   │   ├── hello_python_2.zip
    │   │   ├── simultaneous.tfvars
    ```
-   :information_source:**Note: If you are creating lambda functions, you also need to add a .zip file of the code**
+   :information_source: **Note: If you are creating lambda functions, you also need to add a .zip file of the code**
 3. Change the values of simultaneous variables by opening the simultaneous.tfvars file
    ```
+   service_name = "simultaneous"
+   aws_region   = "us-east-1"
+   ec2 = [{
+     name = "Jeffrey"
+     subnet = {
+       name = "subnet_1"
+       id   = null
+       type = "created"
+     }
+     },
+     {
+       name = "Greg"
+       subnet = {
+         name = "subnet_2"
+         id   = null
+         type = "created"
+       }
+   }]
+
+   servers = [{
+     name                 = "Steve"
+     security_group_index = 0
+     subnet = {
+       name = "subnet_1"
+       id   = null
+       type = "created"
+     }
+     private_ips        = ["10.0.1.60"]
+     server_ami         = "ami-052efd3df9dad4825"
+     container_instance = false
+     cluster_name       = null
+     },
+     {
+       name                 = "ECS_instance_1"
+       security_group_index = 0
+       subnet = {
+         name = "subnet_1"
+         id   = null
+         type = "created"
+       }
+       private_ips        = ["10.0.1.70"]
+       server_ami         = "ami-061c737b1691cb15f"
+       container_instance = true
+       cluster_name       = "ecs_cluster_1"
+     },
+     {
+       name                 = "ECS_instance_2"
+       security_group_index = 0
+       subnet = {
+         name = "subnet_2"
+         id   = null
+         type = "created"
+       }
+       private_ips        = ["10.0.10.60"]
+       server_ami         = "ami-061c737b1691cb15f"
+       container_instance = true
+       cluster_name       = "ecs_cluster_1"
+   }]
+
+   lambdas = [{
+     file                   = "hello_python.zip"
+     security_group_indices = [0]
+     subnets = [{
+       name = "subnet_1"
+       id   = null
+       type = "created"
+     }]
+     },
+     {
+       file                   = "hello_python_2.zip"
+       security_group_indices = [0]
+       subnets = [{
+         name = "subnet_2"
+         id   = null
+         type = "created"
+       }]
+   }]
+
+   list_of_emails = ["John.Doe@saic.com", "Jane.Doe@saic.com"]
+   num_widgets    = 6
+   width          = 4
+   height         = 7
+
+   vpc = [{
+     name       = "simultaneous"
+     cidr_block = "10.0.0.0/16"
+   }]
+
+   route_tables = [{
+     name = "public_internet_us_east_1a"
+     routes = [{
+       destination_cidr_block = "0.0.0.0/0"
+       gateway_name           = "simultaneous"
+       gateway_type           = "internet"
+     }]
+     subnets = [{
+       name = "subnet_1"
+       id   = null
+       type = "created"
+     }]
+     },
+     {
+       name = "public_internet_us_east_1b"
+       routes = [{
+         destination_cidr_block = "0.0.0.0/0"
+         gateway_name           = "simultaneous"
+         gateway_type           = "internet"
+       }]
+       subnets = [{
+         name = "subnet_2"
+         id   = null
+         type = "created"
+       }]
+     },
+     { name = "private_public_us_east_1a"
+       routes = [{
+         destination_cidr_block = "0.0.0.0/0"
+         gateway_name           = "ngw_us_east_1a"
+         gateway_type           = "nat"
+       }]
+       subnets = [{
+         name = "subnet_3"
+         id   = null
+         type = "created"
+       }]
+     },
+     {
+       name = "private_public_us_east_1b"
+       routes = [{
+         destination_cidr_block = "0.0.0.0/0"
+         gateway_name           = "ngw_us_east_1b"
+         gateway_type           = "nat"
+       }]
+       subnets = [{
+         name = "subnet_4"
+         id   = null
+         type = "created"
+       }]
+   }]
+
+   nat_gateways = [{
+     name              = "ngw_us_east_1a"
+     connectivity_type = "public"
+     subnet = {
+       name = "subnet_1"
+       id   = null
+       type = "created"
+     }
+     private_ip = "10.0.1.1"
+     },
+     {
+       name              = "ngw_us_east_1b"
+       connectivity_type = "public"
+       subnet = {
+         name = "subnet_2"
+         id   = null
+         type = "created"
+       }
+       private_ip = "10.0.2.1"
+   }]
+
+   subnets = [{
+     cidr_block        = "10.0.1.0/24"
+     route_table_index = 0
+     tags = {
+       Name                                  = "subnet_1"
+       "kubernetes.io/cluster/eks_cluster_1" = "shared"
+     }
+     subnet_type       = "public"
+     availability_zone = "us-east-1a"
+     vpc = {
+       name = "simultaneous"
+       id   = null
+       type = "created"
+     }
+     },
+     {
+       cidr_block        = "10.0.10.0/24"
+       route_table_index = 1
+       tags = {
+         Name                                  = "subnet_2"
+         "kubernetes.io/cluster/eks_cluster_1" = "shared"
+       }
+       availability_zone = "us-east-1b"
+       subnet_type       = "public"
+       vpc = {
+         name = "simultaneous"
+         id   = null
+         type = "created"
+       }
+     },
+     {
+       cidr_block        = "10.0.3.0/24"
+       route_table_index = 2
+       tags = {
+         Name                                  = "subnet_3"
+         "kubernetes.io/cluster/eks_cluster_1" = "shared"
+       }
+       availability_zone = "us-east-1a"
+       subnet_type       = "private"
+       vpc = {
+         name = "simultaneous"
+         id   = null
+         type = "created"
+       }
+     },
+     {
+       cidr_block        = "10.0.5.0/24"
+       route_table_index = 3
+       tags = {
+         Name                                  = "subnet_4"
+         "kubernetes.io/cluster/eks_cluster_1" = "shared"
+       }
+       availability_zone = "us-east-1b"
+       subnet_type       = "private"
+       vpc = {
+         name = "simultaneous"
+         id   = null
+         type = "created"
+       }
+     }
+   ]
+
+   security_groups = [{
+     security_group_name = "internet"
+     description         = "Allows HTTP and HTTPS traffic"
+     rules = [{
+       from_port = 443
+       to_port   = 443
+       protocol  = "tcp"
+       type      = "ingress"
+       },
+       {
+         from_port = 80
+         to_port   = 80
+         protocol  = "tcp"
+         type      = "ingress"
+       },
+       {
+         from_port = 0
+         to_port   = 0
+         protocol  = "-1"
+         type      = "egress"
+     }]
+     vpc = {
+       name = "simultaneous"
+       id   = null
+       type = "created"
+     }
+
+     cidr_blocks = ["0.0.0.0/0"]
+     }
+   ]
+
+   ecs_task_definitions = [{
+     container_definitions = [{
+       name      = "ecs_container_1"
+       image     = "saicoss/anvil:latest"
+       cpu       = 10
+       memory    = 512
+       essential = true
+       port_mappings = [{
+         containerPort = 80
+         hostPort      = 80
+       }]
+     }]
+
+     task_name         = "ecs_task_1"
+     availability_zone = "us-east-1a"
+     services = [{
+       name          = "do_this_thing_ecs"
+       desired_count = 2
+     }]
+     cluster_name = "ecs_cluster_1"
+   }]
+
+   fargate_task_definitions = [{
+     container_definitions = [{
+       name      = "fargate_container_1"
+       image     = "saicoss/anvil:latest"
+       cpu       = 10
+       memory    = 512
+       essential = true
+       port_mappings = [{
+         containerPort = 80
+         hostPort      = 80
+       }]
+     }]
+
+     task_name = "fargate_task_1"
+     services = [{
+       name          = "do_this_thing_fargate"
+       desired_count = 2
+       subnet = {
+         name = "subnet_1"
+         id   = null
+         type = "created"
+       }
+     }]
+     cluster_name = "ecs_cluster_1"
+   }]
+
+   ecs_cluster_names = ["ecs_cluster_1"]
+
+   eks_clusters = [{
+     name = "eks_cluster_1"
+     subnets = [{
+       name = "subnet_1"
+       id   = null
+       type = "created"
+       },
+       {
+         name = "subnet_2"
+         id   = null
+         type = "created"
+     }]
+
+     user_names = ["John.Doe@saic.com", "Jane.Doe@saic.com"]
+   }]
+
+   fargate_profiles = [{
+     name = "fargate_profile_1",
+     subnets = [{
+       name = "subnet_3"
+       id   = null
+       type = "created"
+       },
+       {
+         name = "subnet_4"
+         id   = null
+         type = "created"
+     }]
+     cluster_name = "eks_cluster_1"
+   }]
+
+   node_groups = [{
+     name         = "node_group_1"
+     cluster_name = "eks_cluster_1"
+     subnets = [{
+       name = "subnet_1"
+       id   = null
+       type = "created"
+       },
+       {
+         name = "subnet_2"
+         id   = null
+         type = "created"
+     }]
+     instance_types  = ["t3.medium"]
+     desired_size    = 1
+     max_size        = 1
+     min_size        = 1
+     max_unavailable = 1
+   }]
+
+   beanstalk = [{
+     bean_app_name       = "Sparky"
+     bean_env_names      = ["Dog-House"]
+     solution_stack_name = "64bit Amazon Linux 2 v3.5.3 running Go 1" // "Solution Stack"
+     subnets = [{
+       name = "subnet_1"
+       id   = null
+       type = "created"
+       },
+       {
+         name = "subnet_2"
+         id   = null
+         type = "created"
+     }]
+   }]
    ```
-   Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the inputs documentation for this template
+   Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation](#provisioning-templates) for this template
 4. Create a new workspace for this service in the `examples/templates/dash_and_infra folder`
    ```
    $ terraform workspace new simultaneous
    ```
    For more about terraform workspaces, please see [Workspaces | Terraform by HashiCorp](https://www.terraform.io/language/state/workspaces)
 5. Create a Taskfile for the service
-   ```
-   ```
+    ```
+    version: "3"
+
+    tasks:
+      backend:
+        desc: deploy remote backend
+        dir: aws_backend
+        cmds:
+          - terraform init
+          - terraform apply -auto-approve
+      services:
+        desc: deploy all services
+        cmds:
+          - task backend simultaneous
+      destroy_services:
+        desc: destroy all services
+          - task destroy_simultaneous destroy_backend
+      destroy_backend:
+        desc: destroying backend
+        dir: aws_backend
+        cmds:
+          - terraform init
+          - terraform destroy -auto-approve
+      simultaneous:
+        desc: provision the simultaneous test example
+        dir: examples/templates/dash_and_infra
+        cmds:
+          - terraform init -reconfigure
+          - if (terraform workspace list | grep 'simultaneous'); then terraform workspace select simultaneous; else terraform workspace new simultaneous; fi
+          - terraform apply -auto-approve -var-file-../../simultaneous/simultaneous.tfvars
+          - sh kube_config.sh
+      destroy_simultaneous:
+        desc: de-provision the simultaneous test example
+        dir: examples/templates/dash_and_infra
+        cmds:
+          - terraform init -reconfigure
+          - if (terraform workspace list | grep 'simultaneous'); then terraform workspace select simultaneous; else terraform workspace new simultaneous; fi
+          - terraform destroy -auto-approve -var-file-../../simultaneous/simultaneous.tfvars   
+    ```
    For more info on the Taskfile, go to: [Home | Task](https://taskfile.dev/)
+
+**Separate (`dash_only` template, 2 EC2 instances, 3 server EC2 instances (2 used in containers), 2 lambda functions, 1 VPC, 4 subnets, 4 route tables, 2 NAT gateways, 1 security group, 1 ECS-EC2 task, 1 ECS-Fargate task, 1 ECS cluster, 1 EKS cluster, 1 EKS-Fargate profile, 1 EKS-EC2 node group, and 1 Elastic Beanstalk app (with 1 environment). (`infra_only` files not shown, please go to our repo to see the .tfvars and Task commands associated with the underlying infrastructure)**
+1. Let’s start by making a folder inside of the `examples` directory for our service and switch to it
+   ```
+   $ mkdir examples/separate && cd $_
+   --------------------
+   c1_saic_internprog/
+   ├── examples
+   │   ├── separate
+   ```
+2. Next, make the necessary terraform files for this service
+   ```
+   $ echo > dash.tfvars
+   --------------------
+   c1_saic_internprog/
+   ├── examples
+   │   ├── separate
+   │   │   ├── dash.tfvars
+   ```
+3. Change the values of separate variables by opening the separate.tfvars file
+   ```
+   service_name      = "separate"
+   list_of_emails    = ["John.Doe@saic.com", "Jane.Doe@saic.com"]
+   num_widgets       = 6
+   width             = 4
+   height            = 7
+   aws_region        = "us-east-1"
+   ```
+   Each of these variables controls a different aspect of our configuration. To see which variables control what aspect of the config, please view the [inputs documentation](#provisioning-templates) for this template
+4. Create a new workspace for this service in the `examples/templates/dash_only` directory
+   ```
+   $ terraform workspace new separate
+   ```
+5. Add the service to the Taskfile
+    ```
+    version: "3"
+
+    tasks:
+      backend:
+        desc: deploy remote backend
+        dir: aws_backend
+        cmds:
+          - terraform init
+          - terraform apply -auto-approve
+      services:
+        desc: deploy all services
+        cmds:
+          - task backend simultaneous separate
+      destroy_services:
+        desc: destroy all services
+          - task destroy_simultaneous destroy_backend destroy_separate
+      destroy_backend:
+        desc: destroying backend
+        dir: aws_backend
+        cmds:
+          - terraform init
+          - terraform destroy -auto-approve
+      simultaneous:
+        desc: provision the simultaneous test example
+        dir: examples/templates/dash_and_infra
+        cmds:
+          - terraform init -reconfigure
+          - if (terraform workspace list | grep 'simultaneous'); then terraform workspace select simultaneous; else terraform workspace new simultaneous; fi
+          - terraform apply -auto-approve -var-file-../../simultaneous/simultaneous.tfvars
+          - sh kube_config.sh
+      destroy_simultaneous:
+        desc: de-provision the simultaneous test example
+        dir: examples/templates/dash_and_infra
+        cmds:
+          - terraform init -reconfigure
+          - if (terraform workspace list | grep 'simultaneous'); then terraform workspace select simultaneous; else terraform workspace new simultaneous; fi
+          - terraform destroy -auto-approve -var-file-../../simultaneous/simultaneous.tfvars
+      separate:
+        desc: deploy separate
+        dir: examples/templates/dash_only
+        cmds:
+          - sh aws.sh
+          - terraform init -reconfigure
+          - if (terraform workspace list | grep 'separate'); then terraform workspace select separate; else terraform workspace new separate; fi
+          - terraform apply -auto-approve -var-file-../../separate/dash.tfvars
+      destroy_separate:
+        desc: destroying separate
+        dir: examples/templates/dash_only
+        cmds:
+          - terraform init -reconfigure
+          - if (terraform workspace list | grep 'separate'); then terraform workspace select separate; else terraform workspace new separate; fi
+          - terraform destroy -auto-approve -var-file=../../separate/dash.tfvars  
+    ```
+  a. Each time you add a new service, you will need to:
+    
+     i. Add provisioning and deprovisioning tasks for the service (separate and destroy_separate)
+    ii. Add those tasks to the global provisioning and deprovisioning tasks (services and destroy_services)
+    
+  b. For more info on the Taskfile, go to: [Home | Task](https://taskfile.dev/)
 
 # Modules
 **This is a list of modules used by the services and their inputs/outputs**
