@@ -780,6 +780,74 @@ Unfortunately, Terraform does not have support for all AWS API calls. If/when yo
     ii. Add those tasks to the global provisioning and deprovisioning tasks (services and destroy_services)
     
   b. For more info on the Taskfile, go to: [Home | Task](https://taskfile.dev/)
+  
+**From the home directory (C1_SAIC_InternProg) run the Taskfile with the following commands from the command line:**
+1. Before provisioning any services, provision a remote backend: `$ task backend`
+2. To deploy all services: `$ task services`
+3. To run an individual service:
+
+    a. **Simultaneous**: `$ task simultaneous`
+  
+    b. **Separate**: `$ task separate`
+  
+4. To destroy all services (and the backend): `$ task destroy_services`
+5. To destroy an individual service:
+
+    a. **Simultaneous: $ task destroy_simultaneous**
+  
+    b. **Separate: $ task destroy_separate**
+  
+    c. **Backend: $ task destroy_backend**
+  
+6. To test the services: `$ task test`
+
+:information_source: When creating a test service for your code, make sure you provision a separate backend to prevent your other infrastructure from being influenced by the test. The terra_test.go file controls the testing example. Learn more about the Terratest package [here](https://terratest.gruntwork.io/) and [here](https://www.youtube.com/watch?v=xhHOW0EF5u8)
+
+**We have provided testing examples that reflect our current implementations of each deployment. As services are added and changed, the .tfvars files for each of these implementations will need to be updated accordingly.**
+
+**Testing**
+
+All of our tests are written in Go using the [Terratest](https://terratest.gruntwork.io/) package. Far more extensive documentation on everything that Terratest can do is available [here](https://terratest.gruntwork.io/docs/), but here’s what you need to know to get started:
+```
+import (
+	"fmt"
+	"testing"
+	"time"
+
+	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
+
+	"github.com/gruntwork-io/terratest/modules/logger"
+
+	"github.com/gruntwork-io/terratest/modules/terraform"
+
+	"github.com/gruntwork-io/terratest/modules/shell"
+)
+
+func TestDashAndInfra(t *testing.T) {
+	// retryable errors in terraform testing.
+	terraformOptions := terraform.WithDefaultRetryableErrors(t, &terraform.Options{
+		TerraformDir: "../examples/templates/dash_and_infra", VarFiles: []string{"../../simultaneous/simultaneous.tfvars"},
+	})
+
+	defer terraform.Destroy(t, terraformOptions)
+
+	terraform.Init(t, terraformOptions)
+	terraform.WorkspaceSelectOrNew(t, terraformOptions, "simultaneous")
+	terraform.Apply(t, terraformOptions)
+
+	shell.RunCommandAndGetOutput(t, shell.Command{Command: "sh", Args: []string{"kube_config.sh"}, WorkingDir: "../examples/templates/dash_and_infra", Env: map[string]string{"": ""}, Logger: logger.New(nil)})
+
+}
+```
+`terraform.WithDefaultRetryableErrors()` allows you to specify the `TerraformDir` you’d like to operate out of and any VarFiles (.tfvars) that you’d like to use
+
+`defer terraform.Destroy()` makes sure that provisioned infrastructure is destroyed once the test ends
+
+`terraform.Init()`, `terraform.WorkspaceSelectOrNew()`, and `terraform.Apply()` work the same way that the corresponding terraform CLI command does
+
+`shell.RunCommandAndGetOutput()` runs a bash shell command and gets the output as a string
+
+We recommend following [test-driven development](https://www.datree.io/resources/automated-testing-tools-for-infrastructure-as-code) best-practices and writing your Terratest tests first, then writing the module code that will succeed when run against those test examples.
 
 # Modules
 **This is a list of modules used by the services and their inputs/outputs**
