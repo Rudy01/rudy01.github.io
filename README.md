@@ -212,7 +212,6 @@ This is the project space for SAIC Interns
   - `list_of_alarm_arns`: A list of all alarms provisioned for the service. Used to create an overview dashboard
   - `mode`: Validates that the same template is always run (dash_and_infra or dash_only)
   - `public_ip`: Outputs the public IP address of the web server so it can be http-checked in our tests
-- 
 
 `dash_only`: Provisions an alarm dashboard by searching for existing infrastructure with a given Service tag. Useful for adding continuous monitoring to existing resources/services (created **outside** of terraform or managed by a **different** terraform state).
 - Inputs
@@ -1206,3 +1205,9 @@ Template for below documentation:
     - `log_group_name`: The name of the CloudWatch log group associated with the metric filter
   - Outputs
     - None
+
+# Known Issues
+A list of known issues, errors, or improvements that need to be addressed in the future.
+1. Trying to use multiple default subnets within a default VPC can cause errors or undesirable behavior. With the current implementation, you can only use multiple default subnets iteratively (`a, b, c` is OK, `a, c` is not). If you include the default subnet 3 times within a single `subnets[]` list of objects, you would get 3 different default subnets for services that require multi-subnet support (like `eks_cluster`).
+2. It’s also possible to include an availability zone where there isn’t a default subnet (`us-east-1b` in `us-east-1`, for example). Until module `precondition {}` support is added in Terraform, you will have to do some error catching on the subnets input using a `can(contains())` (or similar function) within each module
+3. We specify a lot of `object()` or `list(object())` variables in Terraform. As of the [1.3.0 prerelease](https://github.com/hashicorp/terraform/releases/tag/v1.3.0-alpha20220803), there is planned support for `optional()` attributes within objects. **We would highly recommend implementing this feature as soon as it is released to the public, so that the user does not have to specify every single field within an object for each object.**
